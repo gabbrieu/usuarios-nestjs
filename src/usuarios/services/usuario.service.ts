@@ -38,4 +38,17 @@ export class UsuarioService{
         else
             throw new NotFoundException('Usuário com esse id não existe');
     }
+
+    async updateUser(user: UpdateUsuariosDTO, id: string): Promise<Usuarios>{
+        if(!await this.usuarioRepository.findOne(id)){
+            throw new NotFoundException('Usuário com esse id não existe')
+        }
+
+        this.usuarioRepository.update(id, {
+            usuario: user.usuario,
+            senha: user.senha
+        });
+
+        return this.getById(id);
+    }
 }
