@@ -29,7 +29,9 @@ export class UsuarioService{
 
         const usuario = this.usuarioRepository.create(user);
 
-        return await usuario.save();
+        const usuarioSalvo = this.usuarioRepository.save(usuario);
+
+        return usuarioSalvo;
     }
 
     async deleteUser(id: string){
