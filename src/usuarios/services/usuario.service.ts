@@ -46,7 +46,7 @@ export class UsuarioService{
             throw new NotFoundException('Usuário com esse id não existe')
         }
 
-        this.usuarioRepository.update(id, {
+        await this.usuarioRepository.update(id, {
             usuario: user.usuario,
             senha: user.senha
         });

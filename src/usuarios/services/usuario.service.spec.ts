@@ -3,9 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { UsuarioService } from './usuario.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import TestUtil from '../../shared/test/testUtil';
-import { exec } from 'child_process';
-import { exception } from 'console';
-import { NotFoundException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 
 describe('UsuarioService', () => {
     let service: UsuarioService;
@@ -59,7 +57,7 @@ describe('UsuarioService', () => {
     });
 
     describe('When search a user by id', () => {
-        it('should be list one existint user', async () => {
+        it('should list one existint user', async () => {
             const user = TestUtil.giveMeAValideUser();
             mockRepository.findOne.mockReturnValue(user);
             const userFound = await service.getById('1');
@@ -68,7 +66,7 @@ describe('UsuarioService', () => {
             expect(mockRepository.findOne).toHaveBeenCalledTimes(1);
         });
 
-        it('should throw a exception when a user is not found', async () => {
+        it('should throw a NotFoundException when the user is not found', async () => {
             mockRepository.findOne.mockReturnValue(null); //Deve retornar null pois nesse caso é quando o banco não acha o usuário
 
             expect(service.getById('2')).rejects.toBeInstanceOf(NotFoundException);
@@ -76,19 +74,66 @@ describe('UsuarioService', () => {
         });
     });
 
-    /**describe('When create a user', () => {
+    describe('When create a user', () => {
         it('should create a user', async () => {
             const user = TestUtil.giveMeAValideUser();
-            mockRepository.findOne.mockReturnValue(user);
+            mockRepository.findOne.mockReturnValue(null);
             mockRepository.save.mockReturnValue(user);
             mockRepository.create.mockReturnValue(user);
             const userCreated = await service.createUser(user);
 
-            expect(userCreated).toBeInstanceOf(user);
+            expect(userCreated).toMatchObject(user);
             expect(mockRepository.findOne).toHaveBeenCalledTimes(1);
             expect(mockRepository.save).toHaveBeenCalledTimes(1);
             expect(mockRepository.create).toHaveBeenCalledTimes(1);
         });
-    }); **/
+
+        it('should throw a ConflitException if the user already exists in the DB', async () => {
+            const user = TestUtil.giveMeAValideUser();
+            mockRepository.findOne.mockReturnValue(user);
+            
+            expect(service.createUser(user)).rejects.toBeInstanceOf(ConflictException);
+            expect(mockRepository.findOne).toHaveBeenCalledTimes(1);
+        });
+    });
+
+    describe('When delete a user', () => {
+        it('should delete the user', async () => {
+            const user = TestUtil.giveMeAValideUser();
+            mockRepository.findOne.mockReturnValue(user);
+            mockRepository.delete.mockReturnValue(user);
+            const returnValue = await service.deleteUser('1');
+            expect(returnValue).toBeUndefined();
+            expect(mockRepository.findOne).toHaveBeenCalledTimes(1);
+            expect(mockRepository.delete).toHaveBeenCalledTimes(1);
+        });
+
+        it('should throw a NotFoundException when the user does not exists', async () => {
+            mockRepository.findOne.mockReturnValue(null);
+            expect(service.deleteUser('3')).rejects.toBeInstanceOf(NotFoundException);
+            expect(mockRepository.findOne).toHaveBeenCalledTimes(1);
+        });
+    });
+
+    describe('When update a user', () => {
+        it('should update a user', async () => {
+            const user = TestUtil.giveMeAValideUser();
+            mockRepository.findOne.mockReturnValue(user);
+            mockRepository.update.mockReturnValue({...user, usuario: 'Bielzin'});
+
+            const userUpdated = await service.updateUser({...user, usuario: 'Bielzin'}, '1');
+            expect(userUpdated).toMatchObject(user);
+            expect(mockRepository.findOne).toHaveBeenCalledTimes(2);
+            expect(mockRepository.update).toHaveBeenCalledTimes(1);
+        });
+        
+        it('should throw a NotFoundException when the user does not exists', async () => {
+            const user = TestUtil.giveMeAValideUser();
+            mockRepository.findOne.mockReturnValue(null);
+
+            expect(service.updateUser(user, '3')).rejects.toBeInstanceOf(NotFoundException);
+            expect(mockRepository.findOne).toHaveBeenCalledTimes(1);
+        });
+    });
 
 });
